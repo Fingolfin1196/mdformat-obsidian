@@ -21,6 +21,7 @@ from .mdit_plugins import (
     format_footnote_block,
     format_footnote_ref,
     obsidian_callout_plugin,
+    obsidian_links_plugin,
 )
 
 if TYPE_CHECKING:
@@ -37,6 +38,7 @@ def update_mdit(mdit: MarkdownIt) -> None:
     mdit.use(footnote_plugin)
     mdit.use(obsidian_callout_plugin)
     mdit.use(tasklists_plugin)
+    mdit.use(obsidian_links_plugin)
 
 
 def _render_obsidian_callout(node: RenderTreeNode, context: RenderContext) -> str:
@@ -47,10 +49,7 @@ def _render_obsidian_callout(node: RenderTreeNode, context: RenderContext) -> st
     return "\n".join([title_line, "\n\n".join(elements)]).rstrip()
 
 
-def _no_render(
-    node: RenderTreeNode,  # noqa: ARG001
-    context: RenderContext,  # noqa: ARG001
-) -> str:
+def _no_render(node: RenderTreeNode, context: RenderContext) -> str:
     """Skip rendering when handled separately."""
     return ""
 
@@ -65,24 +64,6 @@ def _recursive_render(
 
 
 # ================================================================================
-# Dollar Math. Adapted from mdformat-myst:
-# https://github.com/executablebooks/mdformat-myst/blob/e12a64c7e3f695ea7c3ba9b33abd79c219a01750/mdformat_myst/plugin.py#L53C1-L133
-# ================================================================================
-
-
-def _math_inline_renderer(node: RenderTreeNode, context: RenderContext) -> str:  # noqa: ARG001
-    return f"${node.content}$"
-
-
-def _math_block_renderer(node: RenderTreeNode, context: RenderContext) -> str:  # noqa: ARG001
-    return f"$${node.content}$$"
-
-
-def _math_block_label_renderer(node: RenderTreeNode, context: RenderContext) -> str:  # noqa: ARG001
-    return f"$${node.content}$$ ({node.info})"
-
-
-# ================================================================================
 # End Dollar Math
 # ================================================================================
 
@@ -93,10 +74,13 @@ RENDERERS: Mapping[str, Render] = {
     "footnote": format_footnote,
     "footnote_block": format_footnote_block,
     "footnote_ref": format_footnote_ref,
-    "math_block": _math_block_renderer,
-    "math_block_label": _math_block_label_renderer,
-    "math_inline": _math_inline_renderer,
-    "math_inline_double": _math_block_renderer,
+    "hr": (lambda node, context: "---"),
+    "embed_file": lambda node, context: f"![[{node.content}]]",
+    "internal_link": lambda node, context: f"[[{node.content}]]",
+    "math_block": (lambda node, context: f"$${node.content}$$"),
+    "math_block_label": (lambda node, context: f"$${node.content}$$ ({node.info})"),
+    "math_inline": (lambda node, context: f"${node.content}$"),
+    "math_inline_double": (lambda node, context: f"$${node.content}$$"),
     OBSIDIAN_CALLOUT_PREFIX: _render_obsidian_callout,
     f"{OBSIDIAN_CALLOUT_PREFIX}_title": _no_render,
     f"{OBSIDIAN_CALLOUT_PREFIX}_title_inner": _no_render,
@@ -105,12 +89,14 @@ RENDERERS: Mapping[str, Render] = {
     f"{OBSIDIAN_CALLOUT_PREFIX}_content": _recursive_render,
 }
 
+
 def add_cli_options(parser: argparse.ArgumentParser) -> None:
     """Force numbering."""
     for a in parser._actions:
         if a.option_strings != ["--number"]:
             continue
         a.default = True
+
 
 # A mapping from `RenderTreeNode.type` to a `Postprocess` that does
 # postprocessing for the output of the `Render` function. Unlike

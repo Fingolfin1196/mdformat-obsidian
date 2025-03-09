@@ -10,13 +10,7 @@ from typing import TYPE_CHECKING, Callable, Literal, NamedTuple, TypeVar
 
 from more_itertools import unzip, zip_equal
 
-from ._helpers import (
-    EOL,
-    MKDOCS_INDENT_COUNT,
-    get_conf,
-    rstrip_result,
-    separate_indent,
-)
+from ._helpers import EOL, MKDOCS_INDENT_COUNT, get_conf, rstrip_result, separate_indent
 
 if TYPE_CHECKING:
     from mdformat.renderer import RenderContext, RenderTreeNode

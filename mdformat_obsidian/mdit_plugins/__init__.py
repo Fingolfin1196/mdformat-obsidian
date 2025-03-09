@@ -11,7 +11,7 @@ from ._obsidian_inline_footnotes import (
     format_footnote_block,
     format_footnote_ref,
 )
-from ._obsidian_task_lists import tasklists_plugin
+from ._obsidian_links import obsidian_links_plugin
 
 __all__ = (
     "INLINE_SEP",
@@ -22,5 +22,4 @@ __all__ = (
     "format_footnote_ref",
     "format_obsidian_callout_markup",
     "obsidian_callout_plugin",
-    "tasklists_plugin",
 )

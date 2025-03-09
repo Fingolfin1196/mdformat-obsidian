@@ -27,7 +27,7 @@ def _print(content: str, show_whitespace: bool) -> None:
         print((visible_indents if show_whitespace else indent) + content)  # noqa: T201
 
 
-def print_text(output: str, expected: str, show_whitespace: bool = False) -> None:  # noqa: FBT002
+def print_text(output: str, expected: str, show_whitespace: bool = False) -> None:
     """Conditional print text for debugging."""
     if _SHOW_TEXT:
         print("--  Output  --")  # noqa: T201
