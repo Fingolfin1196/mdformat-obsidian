@@ -3,12 +3,16 @@
 from __future__ import annotations
 
 from collections.abc import Mapping
+from functools import partial
+from typing import TYPE_CHECKING
 
 from markdown_it import MarkdownIt
 from mdformat.renderer import RenderContext, RenderTreeNode
 from mdformat.renderer.typing import Render
 from mdit_py_plugins.dollarmath import dollarmath_plugin
+from mdit_py_plugins.tasklists import tasklists_plugin
 
+from ._normalize_list import normalize_list as unbounded_normalize_list
 from .mdit_plugins import (
     INLINE_SEP,
     OBSIDIAN_CALLOUT_PREFIX,
@@ -17,13 +21,19 @@ from .mdit_plugins import (
     format_footnote_block,
     format_footnote_ref,
     obsidian_callout_plugin,
-    tasklists_plugin,
 )
+
+if TYPE_CHECKING:
+    import argparse
+    from collections.abc import Mapping
+
+    from markdown_it import MarkdownIt
+    from mdformat.renderer.typing import Postprocess, Render
 
 
 def update_mdit(mdit: MarkdownIt) -> None:
     """Update the parser to identify Alerts."""
-    mdit.use(dollarmath_plugin)
+    mdit.use(partial(dollarmath_plugin, double_inline=True))
     mdit.use(footnote_plugin)
     mdit.use(obsidian_callout_plugin)
     mdit.use(tasklists_plugin)
@@ -86,10 +96,28 @@ RENDERERS: Mapping[str, Render] = {
     "math_block": _math_block_renderer,
     "math_block_label": _math_block_label_renderer,
     "math_inline": _math_inline_renderer,
+    "math_inline_double": _math_block_renderer,
     OBSIDIAN_CALLOUT_PREFIX: _render_obsidian_callout,
     f"{OBSIDIAN_CALLOUT_PREFIX}_title": _no_render,
     f"{OBSIDIAN_CALLOUT_PREFIX}_title_inner": _no_render,
     f"{OBSIDIAN_CALLOUT_PREFIX}_collapsed": _no_render,
     # FIXME: can I add divs without introducing new blocks?
     f"{OBSIDIAN_CALLOUT_PREFIX}_content": _recursive_render,
+}
+
+def add_cli_options(parser: argparse.ArgumentParser) -> None:
+    """Force numbering."""
+    for a in parser._actions:
+        if a.option_strings != ["--number"]:
+            continue
+        a.default = True
+
+# A mapping from `RenderTreeNode.type` to a `Postprocess` that does
+# postprocessing for the output of the `Render` function. Unlike
+# `Render` funcs, `Postprocess` funcs are collaborative: any number of
+# plugins can define a postprocessor for a syntax type and all of them
+# will run in series.
+POSTPROCESSORS: Mapping[str, Postprocess] = {
+    "bullet_list": unbounded_normalize_list,
+    "ordered_list": unbounded_normalize_list,
 }
