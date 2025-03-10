@@ -3,32 +3,8 @@
 from __future__ import annotations
 
 import re
-from collections.abc import Mapping
-from functools import wraps
-from typing import Any, Callable
 
 from . import __plugin_name__
-
-EOL = "\n"
-"""Line delimiter."""
-
-MKDOCS_INDENT_COUNT = 4
-"""Use 4-spaces for mkdocs."""
-
-
-def rstrip_result(func: Callable[..., str]) -> Callable[..., str]:
-    """Right-strip the decorated function's result.
-
-    Returns:
-        Callable[..., str]: decorator
-
-    """
-
-    @wraps(func)
-    def _wrapper(*args, **kwargs) -> str:
-        return func(*args, **kwargs).rstrip()
-
-    return _wrapper
 
 
 def separate_indent(line: str) -> tuple[str, str]:
@@ -42,15 +18,3 @@ def separate_indent(line: str) -> tuple[str, str]:
     match = re_indent.match(line)
     assert match  # for pyright
     return (match["indent"], match["content"])
-
-
-ContextOptions = Mapping[str, Any]
-
-
-def get_conf(options: ContextOptions, key: str) -> bool | str | int | None:
-    """Read setting from mdformat configuration Context."""
-    if (api := options["mdformat"].get(key)) is not None:
-        return api  # From API
-    return (
-        options["mdformat"].get("plugin", {}).get(__plugin_name__, {}).get(key)
-    )  # from cli_or_toml

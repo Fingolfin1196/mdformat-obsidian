@@ -1,4 +1,4 @@
-# Patched version of mdit_py_plugins.dollarmath.dollarmath_plugin
+"""Patched version of mdit_py_plugins.dollarmath.dollarmath_plugin."""
 
 from __future__ import annotations
 

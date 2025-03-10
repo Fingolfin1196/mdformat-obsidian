@@ -21,6 +21,8 @@ from mdformat.renderer._util import (
 from mdformat.renderer.typing import Render
 from mdit_py_plugins.tasklists import tasklists_plugin
 
+from mdformat_obsidian._helpers import separate_indent
+
 from .mdit_plugins import (
     INLINE_SEP,
     OBSIDIAN_CALLOUT_PREFIX,
@@ -100,8 +102,7 @@ def paragraph(node: RenderTreeNode, context: RenderContext) -> str:  # noqa: C90
         # Strip whitespace to prevent issues like a line starting tab that is
         # interpreted as start of a code block.
         lines[i] = lines[i].rstrip()
-        lstrip = lines[i].lstrip()
-        lindent = len(lines[i]) - len(lstrip)
+        lindent, lstrip = separate_indent(lines[i])
         lines[i] = lstrip
 
         # If a line looks like an ATX heading, escape the first hash.
@@ -155,9 +156,7 @@ def paragraph(node: RenderTreeNode, context: RenderContext) -> str:  # noqa: C90
                 lines[i] = f"    {lines[i]}"
                 break
 
-        if lindent != 0:
-            print(lindent, lines[i])
-        lines[i] = " " * lindent + lines[i]
+        lines[i] = lindent + lines[i]
 
     text = "\n".join(lines)
 
