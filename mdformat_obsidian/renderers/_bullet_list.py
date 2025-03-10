@@ -9,8 +9,9 @@ if TYPE_CHECKING:
 
 
 def bullet_list(node: RenderTreeNode, context: RenderContext) -> str:
-    pre_indent = " " * (2 * int(node.level > 0))
-    marker_type = pre_indent + get_list_marker_type(node)
+    marker_type = get_list_marker_type(node)
+    if node.level > 0:
+        marker_type = marker_type.rjust(3)
     first_line_indent = " "
     indent = " " * len(marker_type + first_line_indent)
     block_separator = "\n" if is_tight_list(node) else "\n\n"
