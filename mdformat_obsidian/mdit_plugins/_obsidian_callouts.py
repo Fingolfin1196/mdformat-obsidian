@@ -1,15 +1,16 @@
-"""Obsidian Callouts."""
+"""Obsidian Callouts. Adapted from mdformat-gfm-alerts."""
 
 from __future__ import annotations
 
-from markdown_it.rules_block import StateBlock
+import re
+from contextlib import contextmanager, suppress
+from typing import Generator, NamedTuple
 
-from mdformat_obsidian.factories import (
-    CalloutData,
-    new_token,
-    obsidian_callout_plugin_factory,
-    parse_possible_blockquote_admon_factory,
-)
+from markdown_it import MarkdownIt
+from markdown_it.rules_block import StateBlock
+from markdown_it.rules_inline import StateInline
+from markdown_it.token import Token
+from mdit_py_plugins.utils import is_code_block
 
 OBSIDIAN_CALLOUT_PREFIX = "obsidian_callout"
 """Prefix used to differentiate the parsed output."""
@@ -19,6 +20,36 @@ INLINE_SEP = "\n\n"
 
 PATTERN = r"^\\?\[!(?P<title>[^\]]+)\\?\](?P<fold>[\-\+]?)"
 """Regular expression to match Obsidian Alerts."""
+
+
+# FYI: copied from mdformat_admon.factories
+@contextmanager
+def new_token(
+    state: StateBlock | StateInline,
+    name: str,
+    kind: str,
+) -> Generator[Token, None, None]:
+    """Create scoped token."""
+    yield state.push(f"{name}_open", kind, 1)
+    state.push(f"{name}_close", kind, -1)
+
+
+# FYI: Adapted from mdformat_admon.factories
+class CalloutState(NamedTuple):
+    """Frozen state."""
+
+    parentType: str
+    lineMax: int
+
+
+class CalloutData(NamedTuple):
+    """CalloutData data for rendering."""
+
+    old_state: CalloutState
+    meta_text: str
+    fold: str
+    custom_title: str
+    next_line: int
 
 
 def format_obsidian_callout_markup(
@@ -76,6 +107,46 @@ def format_obsidian_callout_markup(
     state.line = admonition.next_line
 
 
+def parse_possible_blockquote_admon(
+    state: StateBlock,
+    start_line: int,
+    end_line: int,
+    silent: bool,
+) -> CalloutData | bool:
+    if is_code_block(state, start_line):
+        return False
+
+    start = state.bMarks[start_line] + state.tShift[start_line]
+
+    # Exit if no match for any pattern
+    text = state.src[start:]
+    regex = re.compile(rf"{PATTERN}(?P<custom_title>(?: |<br>)[^\n]+)?", re.IGNORECASE)
+    match = regex.match(text)
+    if not match:
+        return False
+
+    # Since start is found, we can report success here in validation mode
+    if silent:
+        return True
+
+    old_state = CalloutState(
+        parentType=state.parentType,
+        lineMax=state.lineMax,
+    )
+    state.parentType = OBSIDIAN_CALLOUT_PREFIX
+
+    fold = ""
+    with suppress(IndexError):
+        fold = match["fold"]
+    return CalloutData(
+        old_state=old_state,
+        meta_text=match["title"],
+        fold=fold,
+        custom_title=match["custom_title"] or "",
+        next_line=end_line,
+    )
+
+
 def alert_logic(
     state: StateBlock,
     startLine: int,
@@ -83,18 +154,12 @@ def alert_logic(
     silent: bool,
 ) -> bool:
     """Parse Obsidian Alerts."""
-    parser_func = parse_possible_blockquote_admon_factory(
-        OBSIDIAN_CALLOUT_PREFIX,
-        {PATTERN},
-    )
-    result = parser_func(state, startLine, endLine, silent)
+    result = parse_possible_blockquote_admon(state, startLine, endLine, silent)
     if isinstance(result, CalloutData):
         format_obsidian_callout_markup(state, startLine, admonition=result)
         return True
     return result
 
 
-obsidian_callout_plugin = obsidian_callout_plugin_factory(
-    OBSIDIAN_CALLOUT_PREFIX,
-    alert_logic,
-)
+def obsidian_callout_plugin(md: MarkdownIt) -> None:
+    md.block.ruler.before("blockquote", OBSIDIAN_CALLOUT_PREFIX, alert_logic)
