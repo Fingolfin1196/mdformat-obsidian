@@ -7,7 +7,6 @@ from collections.abc import Mapping
 from functools import partial
 from typing import TYPE_CHECKING
 
-# from mdit_py_plugins.dollarmath import dollarmath_plugin
 from markdown_it import MarkdownIt
 from markdown_it.rules_block.html_block import HTML_SEQUENCES
 from mdformat import codepoints
@@ -22,10 +21,10 @@ from mdformat.renderer._util import (
 from mdformat.renderer.typing import Render
 from mdit_py_plugins.tasklists import tasklists_plugin
 
-from ._dollarmath import dollarmath_plugin
 from .mdit_plugins import (
     INLINE_SEP,
     OBSIDIAN_CALLOUT_PREFIX,
+    dollarmath_plugin,
     footnote_plugin,
     format_footnote,
     format_footnote_block,

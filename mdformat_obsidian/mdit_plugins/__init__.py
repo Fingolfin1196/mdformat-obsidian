@@ -1,5 +1,6 @@
 from mdit_py_plugins.footnote import footnote_plugin
 
+from ._dollarmath import dollarmath_plugin
 from ._obsidian_callouts import (
     INLINE_SEP,
     OBSIDIAN_CALLOUT_PREFIX,

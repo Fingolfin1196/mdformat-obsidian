@@ -27,7 +27,7 @@ def format_obsidian_callout_markup(
     admonition: CalloutData,
 ) -> None:
     """Format markup."""
-    tag = admonition.meta_text.upper()
+    tag = admonition.meta_text.lower()
     folded = bool(admonition.fold)
     custom_title = admonition.custom_title
     title_line = f"[!{tag}]{admonition.fold}{INLINE_SEP}{custom_title}"
